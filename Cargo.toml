@@ -1,14 +1,19 @@
 [package]
-name = "amethyst-cli"
-version = "0.0.1"
+name = "amethyst"
+authors = ["Amethyst Core"]
+description = "CLI Tool to interact with the Amethyst core in your terminal"
+repository = "https://github.com/amethyst-core/cli"
+readme = "README.md"
+keywords = ["cli", "amethyst", "minecraft", "server", "management"]
+
+version = "0.1.0"
 edition = "2021"
 
 [dependencies]
 clap = "3.0"
 color-eyre = "0.6.3"
-colored = "2.1.0"
 serde = { version = "1.0.203", features = ["derive"] }
-# dirs = "5.0.1"
+dirs = "5.0.1"
 reqwest = { version = "0.12.4", features = ["blocking", "json"] }
 # self-replace = "1.3.7"
 # self_update = "0.40.0"
