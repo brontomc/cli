@@ -3,68 +3,51 @@ use std::path::PathBuf;
 use serde::{Deserialize, Serialize};
 use color_eyre::eyre::{Result, eyre};
 
-// Define a struct to deserialize the configuration file
 #[derive(Debug, Deserialize, Serialize)]
 struct Config {
     version: String,
-    install_path: String,
+    install_path: PathBuf,
+    service_port: u16,
 }
 
 pub fn uninstall() -> Result<()> {
-    
     // Get the path from the configuration file
-    let path = match get_config_path() {
-        Ok(path) => path,
-        Err(e) => return Err(e),
-    };
+    let path = get_config_install_path()?;
 
-    // Construct the path to the configuration file
-    let home_dir = match dirs::home_dir() {
-        Some(path) => path,
-        None => return Err(eyre!("Failed to determine home directory.")),
-    };
-
-    let config_file_path = home_dir.join("amethyst-config.json");
-    
     // Delete the configuration file
-    match fs::remove_file(&config_file_path) {
-        Ok(_) => println!("Config file removed successfully."),
-        Err(e) => println!("Error occurred while removing config file: {}", e),
+    let config_file_path = dirs::home_dir()
+        .ok_or_else(|| eyre!("Failed to determine home directory."))?
+        .join("amethyst-config.json");
+
+    if let Err(e) = fs::remove_file(&config_file_path) {
+        println!("Error occurred while removing config file: {}", e);
+    } else {
+        println!("Config file removed successfully.");
     }
 
     // Attempt to remove the directory and all its contents recursively
-    match fs::remove_dir_all(&path) {
-        Ok(()) => {
-            println!("Uninstall successful.");
-            Ok(()) // Return Ok if removal is successful
-        },
-        Err(err) => Err(eyre!("Failed to uninstall directory: {}", err)), // Return Err with a custom error message if removal fails
-    }
+    fs::remove_dir_all(&path)
+        .map_err(|err| eyre!("Failed to uninstall directory: {}", err))?;
+
+    println!("Uninstall successful.");
+    Ok(())
 }
 
-
-// Function to get the path from the configuration file
-fn get_config_path() -> Result<PathBuf> {
+// Function to get the install path from the configuration file
+fn get_config_install_path() -> Result<PathBuf> {
     // Get the home directory
-    let home_dir = match dirs::home_dir() {
-        Some(path) => path,
-        None => return Err(eyre!("Failed to determine home directory.")),
-    };
+    let home_dir = dirs::home_dir().ok_or_else(|| eyre!("Failed to determine home directory."))?;
 
     // Construct the path to the configuration file
     let config_file_path = home_dir.join("amethyst-config.json");
-
+    
     // Read the configuration file
-    let config_content = match fs::read_to_string(&config_file_path) {
-        Ok(content) => content,
-        Err(err) => return Err(eyre!("Failed to read configuration file: {}", err)),
-    };
+    let config_content = fs::read_to_string(&config_file_path)
+        .map_err(|err| eyre!("Failed to read configuration file: {}", err))?;
 
     // Deserialize the configuration
-    let app_config: Config = match serde_json::from_str(&config_content) {
-        Ok(config) => config,
-        Err(err) => return Err(eyre!("Failed to parse configuration file: {}", err)),
-    };
+    let app_config: Config = serde_json::from_str(&config_content)
+        .map_err(|err| eyre!("Failed to parse configuration file: {}", err))?;
 
-    Ok(PathBuf::from(app_config.install_path))
+    Ok(app_config.install_path)
 }
