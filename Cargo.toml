@@ -1,0 +1,18 @@
+[package]
+name = "amethyst-cli"
+version = "0.0.1"
+edition = "2021"
+
+[dependencies]
+clap = "3.0"
+color-eyre = "0.6.3"
+colored = "2.1.0"
+serde = { version = "1.0.203", features = ["derive"] }
+# dirs = "5.0.1"
+reqwest = { version = "0.12.4", features = ["blocking", "json"] }
+# self-replace = "1.3.7"
+# self_update = "0.40.0"
+semver = { version = "1.0.23", features = ["serde"] }
+# tempfile = "3.10.1"
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+serde_json = "1.0.117"
