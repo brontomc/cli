@@ -18,7 +18,9 @@ reqwest = { version = "0.12.4", features = ["blocking", "json"] }
 # self_update = "0.40.0"
 semver = { version = "1.0.23", features = ["serde"] }
 # tempfile = "3.10.1"
-tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "signal"] }
 serde_json = "1.0.117"
 clap = { version = "4.5.4", features = ["derive"] }
 colored = "2.1.0"
+exitcode = "1.1.2"
+indicatif = "0.17.8"
