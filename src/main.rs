@@ -7,10 +7,12 @@ use clap::{Args, Parser, Subcommand};
 use std::path::PathBuf;
 use color_eyre::eyre::Result;
 use dirs::home_dir;
+use colored::Colorize;
 
 use install::install;
 use uninstall::uninstall;
 use versions::get_latest_release;
+use crate::versions::VersionV;
 
 /// CLI structure to parse command-line arguments.
 #[derive(Parser)]
@@ -54,6 +56,8 @@ struct InstallOptions {
     version: Option<String>,
 }
 
+static GITHUB_TEXT: &str = "If you're unable to resolve the issue yourself, you can open an issue at https://github.com/amethyst-core/cli/issues for further assistance and troubleshooting.";
+
 #[tokio::main]
 async fn main() -> Result<()> {
     // Parse command-line arguments into the CLI structure.
@@ -63,30 +67,44 @@ async fn main() -> Result<()> {
     match &cli.command {
         Commands::Install(opts) => {
 
+            let install_version: VersionV;
+
             if let Some(version) = &opts.version {
-                println!("Installing version {}.", version);
+                install_version = VersionV::from_str(version)?;
             } else {
-                let latest_release = get_latest_release().await?;
-                println!("Installing latest version {}.", latest_release.0);
+                install_version = get_latest_release().await?;
             };
 
             // Install Amethyst Core & Panel.
+            let install_path: PathBuf;
+
             if let Some(path) = &opts.path {
-                let path = home_dir()
+                install_path = home_dir()
                     .expect("Could not find home directory")
                     .join(path)
                     .join(".amethyst");
-                install(&path);
             } else {
-                let path = home_dir()
+                install_path = home_dir()
                     .expect("Could not find home directory")
                     .join(".amethyst");
-                install(&path);
             }
+            match install(&install_path, install_version) {
+                Ok(_) => success!("Installation Completed."),
+                Err(e) => {
+                    error!("Failed to Install: {}\n", e);
+                    info!("{}", GITHUB_TEXT);
+                }
+            };
         }
         Commands::Uninstall => {
             // Uninstall Amethyst Core & Panel.
-            uninstall()?;
+            match uninstall() {
+                Ok(_) => success!("Uninstalled."),
+                Err(e) => {
+                    error!("Failed to uninstall: {}\n", e);
+                    info!("{}", GITHUB_TEXT);
+                },
+            };
         }
         _ => {}
     }
