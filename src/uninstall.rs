@@ -12,24 +12,33 @@ struct Config {
 
 pub fn uninstall() -> Result<()> {
     // Get the path from the configuration file
-    let path = get_config_install_path()?;
+    let path = match get_config_install_path() {
+        Ok(p) => p,
+        Err(e) => {
+            return Err(eyre!("The program encountered an error while attempting to retrieve the path from the configuration file. Reason: {}", e));
+        }
+    };
 
     // Delete the configuration file
-    let config_file_path = dirs::home_dir()
-        .ok_or_else(|| eyre!("Failed to determine home directory."))?
-        .join("amethyst-config.json");
+    let config_file_path = match dirs::home_dir() {
+        Some(home) => home.join("amethyst-config.json"),
+        None => {
+            return Err(eyre!("The program encountered an error while attempting to locate the home directory."));
+        }
+    };
 
     if let Err(e) = fs::remove_file(&config_file_path) {
-        println!("Error occurred while removing config file: {}", e);
-    } else {
-        println!("Config file removed successfully.");
+        return Err(eyre!("The program encountered an error while attempting to delete the configuration file. Reason: {}", e));
     }
 
     // Attempt to remove the directory and all its contents recursively
-    fs::remove_dir_all(&path)
-        .map_err(|err| eyre!("Failed to uninstall directory: {}", err))?;
+    match fs::remove_dir_all(&path) {
+        Ok(_) => {},
+        Err(e) => {
+            return Err(eyre!("The program encountered an error while attempting to remove the directory and all its contents recursively. Reason: {}", e));
+        }
+    };
 
-    println!("Uninstall successful.");
     Ok(())
 }
 
@@ -43,11 +52,11 @@ fn get_config_install_path() -> Result<PathBuf> {
     
     // Read the configuration file
     let config_content = fs::read_to_string(&config_file_path)
-        .map_err(|err| eyre!("Failed to read configuration file: {}", err))?;
+        .map_err(|err| eyre!(err))?;
 
     // Deserialize the configuration
     let app_config: Config = serde_json::from_str(&config_content)
-        .map_err(|err| eyre!("Failed to parse configuration file: {}", err))?;
+        .map_err(|err| eyre!(err))?;
 
     Ok(app_config.install_path)
 }

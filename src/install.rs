@@ -2,6 +2,9 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use serde::Serialize;
 use dirs::home_dir;
+use color_eyre::eyre::{eyre, Result};
+
+use crate::versions::VersionV;
 
 #[derive(Serialize)]
 struct Config {
@@ -10,34 +13,32 @@ struct Config {
     service_port: u16,
 }
 
-pub fn install<P: AsRef<Path>>(amethyst_path: P) {
+#[allow(unused_variables)]
+#[allow(unused_variables)]
+pub fn install<P: AsRef<Path>>(amethyst_path: P, version: VersionV) -> Result<()> {
     let amethyst_path = amethyst_path.as_ref();
 
     // Determine the path to the configuration file in the home directory
     let config_path = match home_dir() {
         Some(path) => path.join("amethyst-config.json"),
         None => {
-            eprintln!("Could not retrieve home directory.");
-            return;
+            return Err(eyre!("The program encountered an error while attempting to determine the path to the configuration file in the home directory."));
         }
     };
 
     // Check if the configuration file already exists
     if config_path.exists() {
-        println!("Config file already exists at {:?}", config_path);
-        return;
+        return Err(eyre!("The system encountered an error while attempting to create a configuration file. It appears that a configuration file already exists. Please delete the config file at {:?} manually before creating a fresh installation.", config_path));
     }
     
     // Check if the directory already exists
     if amethyst_path.exists() {
-        println!("Amethyst already installed at {:?}", amethyst_path);
-        return;
+        return Err(eyre!("The system encountered an error while attempting to install the core components. It appears that the core components are already installed on the system at {:?}. To create a new installation, you have to uninstall the previous version first.", amethyst_path));
     }
 
     // Create the directory
     if let Err(err) = fs::create_dir_all(amethyst_path) {
-        eprintln!("Could not create directory: {}", err);
-        return;
+        return Err(eyre!("The system encountered an error while attempting to install the core components. It appears that the installation process was unable to create a necessary directory. Reason: {}", err));
     }
 
     // Create a configuration struct
@@ -51,17 +52,14 @@ pub fn install<P: AsRef<Path>>(amethyst_path: P) {
     let config_data = match serde_json::to_string_pretty(&config) {
         Ok(data) => data,
         Err(err) => {
-            eprintln!("Could not serialize config: {}", err);
-            return;
+            return Err(eyre!("The system encountered an error while attempting to serialize the configuration struct to a JSON string. This error typically occurs when the configuration data provided is not valid. Reason: {}", err));
         }
     };
 
     // Write the configuration data to the file
     if let Err(err) = fs::write(&config_path, config_data) {
-        eprintln!("Error writing config data: {}", err);
-        return;
+        return Err(eyre!("The system encountered an error while attempting to write the configuration data to the file. Reason: {}", err));
     }
 
-    println!("Config file created at {:?}", config_path);
-    println!("Amethyst installed at {:?}", amethyst_path);
+    Ok(())
 }
