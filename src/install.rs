@@ -1,3 +1,5 @@
+mod utils;
+
 use std::fs;
 use std::path::{Path, PathBuf};
 use serde::Serialize;
@@ -6,16 +8,19 @@ use color_eyre::eyre::{eyre, Result};
 
 use crate::versions::VersionV;
 
+use utils::get_executable_name;
+use utils::construct_download_url;
+use utils::download_core;
+
 #[derive(Serialize)]
 struct Config {
-    version: String,
+    cli_version: String,
+    core_version: String,
     install_path: PathBuf,
     service_port: u16,
 }
 
-#[allow(unused_variables)]
-#[allow(unused_variables)]
-pub fn install<P: AsRef<Path>>(amethyst_path: P, version: VersionV) -> Result<()> {
+pub async fn install<P: AsRef<Path>>(amethyst_path: P, version: VersionV, cli_version: semver::Version) -> Result<()> {
     let amethyst_path = amethyst_path.as_ref();
 
     // Determine the path to the configuration file in the home directory
@@ -43,7 +48,8 @@ pub fn install<P: AsRef<Path>>(amethyst_path: P, version: VersionV) -> Result<()
 
     // Create a configuration struct
     let config = Config {
-        version: "0.1.0".to_string(),
+        cli_version: cli_version.to_string(),
+        core_version: version.to_string(),
         install_path: amethyst_path.to_path_buf(),
         service_port: 9999,
     };
@@ -59,6 +65,15 @@ pub fn install<P: AsRef<Path>>(amethyst_path: P, version: VersionV) -> Result<()
     // Write the configuration data to the file
     if let Err(err) = fs::write(&config_path, config_data) {
         return Err(eyre!("The system encountered an error while attempting to write the configuration data to the file. Reason: {}", err));
+    }
+
+    
+    // Download the core
+    let executable_name = get_executable_name();
+    let amethyst_path = PathBuf::from(amethyst_path).join(executable_name.clone());
+    let url = construct_download_url(version.to_string(), executable_name, "core");
+    if let Err(err) = download_core(url, &amethyst_path).await {
+        return Err(eyre!("The program encountered an error while attempting to install the core. Reason: {}", err));
     }
 
     Ok(())

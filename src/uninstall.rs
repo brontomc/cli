@@ -2,15 +2,24 @@ use std::fs;
 use std::path::PathBuf;
 use serde::{Deserialize, Serialize};
 use color_eyre::eyre::{Result, eyre};
-
+use indicatif::ProgressBar;
+use std::time::Duration;
 #[derive(Debug, Deserialize, Serialize)]
 struct Config {
-    version: String,
+    cli_version: String,
+    core_version: String,
     install_path: PathBuf,
     service_port: u16,
 }
 
 pub fn uninstall() -> Result<()> {
+    
+    // Indicatif setup
+    let pb = ProgressBar::new_spinner();
+    pb.enable_steady_tick(Duration::from_millis(100));
+    pb.set_message("Uninstalling");
+    
+
     // Get the path from the configuration file
     let path = match get_config_install_path() {
         Ok(p) => p,
