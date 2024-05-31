@@ -11,9 +11,8 @@ use color_eyre::eyre::Result;
 use dirs::home_dir;
 use colored::Colorize;
 use tokio::signal;
-use indicatif::ProgressBar;
-use std::time::Duration;
 use exitcode;
+use std::env;
 
 // Local Dependencies
 use install::install;
@@ -64,20 +63,39 @@ struct InstallOptions {
     version: Option<String>,
 }
 
-// Static Strings
+// Functions
+fn check_system_requirements() -> bool {
+    let os = env::consts::OS;
+    match os {
+        "windows" => true,
+        "linux" => true,
+        _ => false,
+    }
+}
+
+// Constants
 static GITHUB_TEXT: &str = "If you're unable to resolve the issue yourself, you can open an issue at https://github.com/amethyst-core/cli/issues for further assistance and troubleshooting.";
 
-// Main
+thread_local! {
+    pub static CLI_VERSION: semver::Version = semver::Version::parse(env!("CARGO_PKG_VERSION")).unwrap();
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
+
     // Parse command-line arguments into the CLI structure.
     let cli = Cli::parse();
+    let _ = color_eyre::install().map_err(|e| warn!("An error occurred during initialization of the Color Eye module. {e}"));
 
     // TODO: Prints CLI Help if no subcommand is provided.
 
     // TODO: Shows CLI Information (Versions).
     
-    // TODO: Check System Requirements.
+    // Check System Requirements.
+    if !check_system_requirements() {
+        error!("System requirements not met. Please check the system requirements and try again.");
+        std::process::exit(exitcode::CONFIG);
+    }
     
     // Spawn a task to handle the CTRL+C signal
     tokio::spawn(async move {
@@ -86,16 +104,11 @@ async fn main() -> Result<()> {
         std::process::exit(exitcode::DATAERR);
     });
     
-    // TODO: Check For CLI Updates Automatically (if enabled in config)
+    // TODO: Check For Core Updates Automatically (if enabled in config)
 
     // Match the command and execute corresponding logic.
     match &cli.command {
         Commands::Install(opts) => {
-
-            // Create a new progress bar
-            let pb = ProgressBar::new_spinner();
-            pb.enable_steady_tick(Duration::from_millis(100)); // Enable steady ticking
-            pb.set_message("Installing");
 
             let install_version: VersionV;
 
@@ -118,13 +131,11 @@ async fn main() -> Result<()> {
                     .expect("Could not find home directory")
                     .join(".amethyst");
             }
-            match install(&install_path, install_version) {
+            match install(&install_path, install_version, CLI_VERSION.with(|v| v.clone())).await {
                 Ok(_) => {
-                    pb.finish_with_message("");
                     success!("Installation Completed");
                 },
                 Err(e) => {
-                    pb.finish_with_message("");
                     error!("Failed to Install: {}\n", e);
                     info!("{}", GITHUB_TEXT);
                 },
@@ -132,19 +143,12 @@ async fn main() -> Result<()> {
         }
         Commands::Uninstall => {
 
-            // Create a new progress bar
-            let pb = ProgressBar::new_spinner();
-            pb.enable_steady_tick(Duration::from_millis(100)); // Enable steady ticking
-            pb.set_message("Uninstalling");
-
             // Uninstall Amethyst Core & Panel.
             match uninstall() {
                 Ok(_) => {
-                    pb.finish_with_message("");
                     success!("Uninstallation Completed");
                 },
                 Err(e) => {
-                    pb.finish_with_message("");
                     error!("Failed to Uninstall: {}\n", e);
                     info!("{}", GITHUB_TEXT);
                 },

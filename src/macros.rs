@@ -3,14 +3,14 @@
 #[macro_export]
 macro_rules! success {
     ($($arg:tt)*) => {
-        println!("{} {}", " ✔ DONE:".green().bold(), format_args!($($arg)*))
+        println!("{} {}", "Done".green().bold(), format_args!($($arg)*))
     };
 }
 
 #[macro_export]
 macro_rules! info {
     ($($arg:tt)*) => {
-        println!("{} {}", " i INFO:".blue().bold(), format_args!($($arg)*))
+        println!("{} {}", "Info".blue().bold(), format_args!($($arg)*))
     };
 }
 
@@ -18,7 +18,7 @@ macro_rules! info {
 #[macro_export]
 macro_rules! warn {
     ($($arg:tt)*) => {
-        println!("\n{} {}", " ▲ WARN:".yellow().bold(), format_args!($($arg)*))
+        println!("\n{} {}", "Warning".yellow().bold(), format_args!($($arg)*))
     }
 }
 
@@ -26,6 +26,6 @@ macro_rules! warn {
 #[macro_export]
 macro_rules! error {
     ($($arg:tt)*) => {
-        println!("{} {}", " ✖ ERROR:".red().bold(), format_args!($($arg)*))
+        println!("{} {}", "Error".red().bold(), format_args!($($arg)*))
     }
 }

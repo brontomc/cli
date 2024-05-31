@@ -17,6 +17,10 @@ impl VersionV {
         let version = Version::parse(s.trim_start_matches('v'))?;
         Ok(VersionV(version))
     }
+
+    pub fn to_string(&self) -> String {
+        self.0.to_string()
+    }
 }
 
 // Define the asynchronous function to fetch the latest release
